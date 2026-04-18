@@ -54,8 +54,13 @@ apiRouter.get('/comic/:id', async (req, res) => {
   }
 });
 
-// Explicitly mount API router BEFORE anything else
+// Mount API router FIRST
 app.use('/api', apiRouter);
+
+// Redirect root index directly to API health
+app.get(['/', '/api'], (req, res) => {
+  res.redirect('/api/health');
+});
 
 // Strict API 404 - If it starts with /api but no route matched, FAIL here.
 app.use('/api', (req, res) => {
