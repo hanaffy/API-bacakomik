@@ -203,6 +203,11 @@ app.get('/api/chapter/:id', async (req, res) => {
   }
 });
 
+// Handle /api/* errors or 404s specifically
+app.use('/api', (req, res, next) => {
+  res.status(404).json({ success: false, message: 'Endpoint not found' });
+});
+
 /**
  * Serve static files from /browser
  */
