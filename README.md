@@ -45,7 +45,10 @@ Ikuti langkah-langkah di bawah ini untuk menjalankan proyek ini di lingkungan lo
    ```
    Aplikasi akan tersedia di `http://localhost:3000`.
 
-5. **Membangun untuk Produksi**
+5. **Deployment ke Vercel**
+   Aplikasi ini sudah dikonfigurasi untuk Vercel. Pastikan Anda memilih framework **Angular** saat melakukan import proyek di Vercel. File `vercel.json` di direktori akar akan menangani perutean API secara otomatis sehingga `/api/*` dapat berfungsi dengan benar.
+
+6. **Membangun untuk Produksi**
    Jika Anda ingin menjalankan aplikasi dalam mode produksi:
    ```bash
    npm run build

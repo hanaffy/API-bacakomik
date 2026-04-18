@@ -57,7 +57,13 @@ async function handleListEndpoint(req: express.Request, res: express.Response, u
     if (order) urlObj.searchParams.set('order', order);
     
     url = urlObj.toString();
+    console.log(`[Scraper] Fetching: ${url}`);
     const response = await fetch(url, { headers });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch from source: ${response.status} ${response.statusText}`);
+    }
+    
     const html = await response.text();
     const $ = cheerio.load(html);
     
@@ -86,6 +92,8 @@ async function handleListEndpoint(req: express.Request, res: express.Response, u
 }
 
 // API Endpoints
+app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
 app.get('/api/komik', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/page/${page}/`));
 app.get('/api/komik-terbaru', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/komik-terbaru/page/${page}/`));
 app.get('/api/daftar-komik', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/daftar-komik/page/${page}/`));

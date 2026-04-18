@@ -468,7 +468,9 @@ export class App {
         this.loading.set(false);
       },
       error: (err) => {
-        this.error.set(err.message || 'An error occurred');
+        console.error('API Error:', err);
+        const errorMessage = err.error?.message || err.message || 'An error occurred while fetching data';
+        this.error.set(errorMessage);
         this.loading.set(false);
       }
     });
