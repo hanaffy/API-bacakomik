@@ -17,6 +17,13 @@ const browserDistFolder = join(__dirname, '../browser');
 
 const app = express();
 app.use(cors());
+
+// Logging middleware untuk mambantu debug di Vercel/Logs
+app.use((req, res, next) => {
+  console.log(`[Request] ${req.method} ${req.url}`);
+  next();
+});
+
 const angularApp = new AngularNodeAppEngine();
 
 const headers = {
