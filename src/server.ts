@@ -42,13 +42,59 @@ apiRouter.get('/rekomendasi', (req, res) => handleListEndpoint(req, res, (p) => 
 apiRouter.get('/komik-terbaru', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/komik-terbaru/page/${p}/`));
 apiRouter.get('/komik', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/page/${p}/`));
 
+apiRouter.get('/daftar-genre', async (req, res) => {
+  try {
+    const response = await fetch(`https://bacakomik.my/daftar-genre/`, { headers });
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const genres: any[] = [];
+    $('.genrelist li').each((i, el) => {
+      const title = $(el).find('a').text().trim();
+      const link = $(el).find('a').attr('href');
+      const id = link ? link.split('/').filter(Boolean).pop() : '';
+      genres.push({ id, title, link });
+    });
+    res.json({ success: true, creator: "Aiman El Hanaffy", data: genres });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 apiRouter.get('/comic/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const response = await fetch(`https://bacakomik.my/komik/${id}/`);
+    const response = await fetch(`https://bacakomik.my/komik/${id}/`, { headers });
     const html = await response.text();
     const $ = cheerio.load(html);
-    res.json({ success: true, data: { id, title: $('h1[itemprop="name"]').text().trim() } });
+    const title = $('h1[itemprop="name"]').text().trim();
+    let image = $('.thumb img').attr('data-lazy-src') || $('.thumb img').attr('src');
+    const description = $('div[itemprop="description"]').text().trim();
+    const chapters: any[] = [];
+    $('#chapter_list li').each((i, el) => {
+      const chapterTitle = $(el).find('.lchx a').text().trim();
+      const chapterLink = $(el).find('.lchx a').attr('href');
+      const chapterId = chapterLink ? chapterLink.split('/').filter(Boolean).pop() : '';
+      chapters.push({ id: chapterId, title: chapterTitle });
+    });
+    res.json({ success: true, data: { id, title, image, description, chapters } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+apiRouter.get('/chapter/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const response = await fetch(`https://bacakomik.my/${id}/`, { headers });
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const title = $('h1[itemprop="name"]').text().trim();
+    const images: string[] = [];
+    $('#chimg-auh img').each((i, el) => {
+      const src = $(el).attr('data-lazy-src') || $(el).attr('src');
+      if (src && !src.startsWith('data:image')) images.push(src);
+    });
+    res.json({ success: true, data: { id, title, images } });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -153,13 +199,7 @@ async function handleListEndpoint(req: express.Request, res: express.Response, u
   }
 }
 
-// --- API ROUTER ---
-// (REMOVED DUPLICATE BLOCK)
 // --- END API ROUTER ---
-
-/**
- * Serve static files from /browser
- */
 
 /**
  * Serve static files from /browser
