@@ -18,6 +18,52 @@ const browserDistFolder = join(__dirname, '../browser');
 const app = express();
 app.use(cors());
 
+// Log ALL requests early
+app.use((req, res, next) => {
+  console.log(`[Early Log] ${req.method} ${req.url}`);
+  next();
+});
+
+// --- API ROUTER (TOP PRIORITY - MOVED TO TOP) ---
+const apiRouter = express.Router();
+
+apiRouter.get('/health', (req, res) => {
+  console.log('[API] Health check triggered');
+  res.json({
+    status: 'ok',
+    time: new Date().toISOString(),
+    path: req.url,
+    originalUrl: req.originalUrl,
+    msg: 'API is serving from the absolute top of Express'
+  });
+});
+
+apiRouter.get('/rekomendasi', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/daftar-komik/page/${p}/?order=rating`));
+apiRouter.get('/komik-terbaru', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/komik-terbaru/page/${p}/`));
+apiRouter.get('/komik', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/page/${p}/`));
+
+apiRouter.get('/comic/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const response = await fetch(`https://bacakomik.my/komik/${id}/`);
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    res.json({ success: true, data: { id, title: $('h1[itemprop="name"]').text().trim() } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Explicitly mount API router BEFORE anything else
+app.use('/api', apiRouter);
+
+// Strict API 404 - If it starts with /api but no route matched, FAIL here.
+app.use('/api', (req, res) => {
+  console.log(`[API] 404 hit for: ${req.url}`);
+  res.status(404).json({ success: false, error: 'API route not found', requestedPath: req.url });
+});
+// --- END API ROUTER ---
+
 // Logging middleware untuk mambantu debug di Vercel/Logs
 app.use((req, res, next) => {
   console.log(`[Request] ${req.method} ${req.url}`);
@@ -103,86 +149,12 @@ async function handleListEndpoint(req: express.Request, res: express.Response, u
 }
 
 // --- API ROUTER ---
-const apiRouter = express.Router();
-
-apiRouter.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    time: new Date().toISOString(),
-    url: req.originalUrl,
-    msg: 'API is alive on Express'
-  });
-});
-
-apiRouter.get('/rekomendasi', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/daftar-komik/page/${p}/?order=rating`));
-apiRouter.get('/komik-terbaru', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/komik-terbaru/page/${p}/`));
-apiRouter.get('/komik', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/page/${p}/`));
-apiRouter.get('/daftar-genre', async (req, res) => {
-  try {
-    const response = await fetch(`https://bacakomik.my/daftar-genre/`, { headers });
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    const genres: any[] = [];
-    $('.genrelist li').each((i, el) => {
-      const title = $(el).find('a').text().trim();
-      const link = $(el).find('a').attr('href');
-      const id = link ? link.split('/').filter(Boolean).pop() : '';
-      genres.push({ id, title, link });
-    });
-    res.json({ success: true, creator: "Aiman El Hanaffy", data: genres });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-apiRouter.get('/comic/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const response = await fetch(`https://bacakomik.my/komik/${id}/`, { headers });
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    const title = $('h1[itemprop="name"]').text().trim();
-    let image = $('.thumb img').attr('data-lazy-src') || $('.thumb img').attr('src');
-    const description = $('div[itemprop="description"]').text().trim();
-    const chapters: any[] = [];
-    $('#chapter_list li').each((i, el) => {
-      const chapterTitle = $(el).find('.lchx a').text().trim();
-      const chapterLink = $(el).find('.lchx a').attr('href');
-      const chapterId = chapterLink ? chapterLink.split('/').filter(Boolean).pop() : '';
-      chapters.push({ id: chapterId, title: chapterTitle });
-    });
-    res.json({ success: true, data: { id, title, image, description, chapters } });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-apiRouter.get('/chapter/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const response = await fetch(`https://bacakomik.my/${id}/`, { headers });
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    const title = $('h1[itemprop="name"]').text().trim();
-    const images: string[] = [];
-    $('#chimg-auh img').each((i, el) => {
-      const src = $(el).attr('data-lazy-src') || $(el).attr('src');
-      if (src && !src.startsWith('data:image')) images.push(src);
-    });
-    res.json({ success: true, data: { id, title, images } });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Use API router
-app.use('/api', apiRouter);
-
-// Strict API 404 - MUST BE AFTER apiRouter but BEFORE Angular handler
-app.use('/api', (req, res) => {
-  res.status(404).json({ success: false, message: `API Endpoint ${req.originalUrl} not found` });
-});
+// (REMOVED DUPLICATE BLOCK)
 // --- END API ROUTER ---
+
+/**
+ * Serve static files from /browser
+ */
 
 /**
  * Serve static files from /browser
@@ -199,6 +171,7 @@ app.use(
  * Handle all other requests by rendering the Angular application.
  */
 app.use((req, res, next) => {
+  console.log(`[SSR] Rendering request for: ${req.url}`);
   angularApp
     .handle(req)
     .then((response) =>
