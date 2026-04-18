@@ -5,7 +5,7 @@ import {JsonPipe} from '@angular/common';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
-  imports: [JsonPipe],
+  imports: [],
   template: `
     <div class="min-h-screen bg-white text-black font-mono p-8 text-sm">
       <div class="max-w-3xl mx-auto space-y-8">

@@ -102,25 +102,38 @@ async function handleListEndpoint(req: express.Request, res: express.Response, u
   }
 }
 
-// API Endpoints
-app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+// API Endpoints - Menggunakan array rute untuk mendukung dengan/tanpa trailing slash
+const apiRoutes = [
+  { path: '/api/health', handler: (req: any, res: any) => res.json({ status: 'ok', time: new Date().toISOString(), url: req.originalUrl }) },
+  { path: '/api/komik', builder: (page: number) => `https://bacakomik.my/page/${page}/` },
+  { path: '/api/komik-terbaru', builder: (page: number) => `https://bacakomik.my/komik-terbaru/page/${page}/` },
+  { path: '/api/daftar-komik', builder: (page: number) => `https://bacakomik.my/daftar-komik/page/${page}/` },
+  { path: '/api/komik-populer', builder: (page: number) => `https://bacakomik.my/komik-populer/page/${page}/` },
+  { path: '/api/komik-berwarna', builder: (page: number) => `https://bacakomik.my/komik-berwarna/page/${page}/` },
+  { path: '/api/baca-manhwa', builder: (page: number) => `https://bacakomik.my/baca-manhwa/page/${page}/` },
+  { path: '/api/baca-manhua', builder: (page: number) => `https://bacakomik.my/baca-manhua/page/${page}/` },
+  { path: '/api/baca-manga', builder: (page: number) => `https://bacakomik.my/baca-manga/page/${page}/` },
+  { path: '/api/rekomendasi', builder: (page: number) => `https://bacakomik.my/daftar-komik/page/${page}/?order=rating` }
+];
 
-app.get('/api/komik', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/page/${page}/`));
-app.get('/api/komik-terbaru', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/komik-terbaru/page/${page}/`));
-app.get('/api/daftar-komik', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/daftar-komik/page/${page}/`));
-app.get('/api/komik-populer', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/komik-populer/page/${page}/`));
-app.get('/api/komik-berwarna', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/komik-berwarna/page/${page}/`));
-app.get('/api/baca-manhwa', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/baca-manhwa/page/${page}/`));
-app.get('/api/baca-manhua', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/baca-manhua/page/${page}/`));
-app.get('/api/baca-manga', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/baca-manga/page/${page}/`));
-app.get('/api/genres/:genre', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/genres/${req.params.genre}/page/${page}/`));
-app.get('/api/cari', (req, res) => {
+// Daftarkan rute dasar
+apiRoutes.forEach(route => {
+  const paths = [route.path, `${route.path}/`];
+  if (route.handler) {
+    app.get(paths, route.handler);
+  } else if (route.builder) {
+    app.get(paths, (req, res) => handleListEndpoint(req, res, route.builder!));
+  }
+});
+
+app.get(['/api/genres/:genre', '/api/genres/:genre/'], (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/genres/${req.params['genre']}/page/${page}/`));
+
+app.get(['/api/cari', '/api/cari/'], (req, res) => {
   const query = req.query['q'] as string || '';
   return handleListEndpoint(req, res, (page) => `https://bacakomik.my/page/${page}/?s=${encodeURIComponent(query)}`);
 });
-app.get('/api/rekomendasi', (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/daftar-komik/page/${page}/?order=rating`));
 
-app.get('/api/daftar-genre', async (req, res) => {
+app.get(['/api/daftar-genre', '/api/daftar-genre/'], async (req, res) => {
   try {
     const response = await fetch(`https://bacakomik.my/daftar-genre/`, { headers });
     const html = await response.text();
@@ -141,7 +154,7 @@ app.get('/api/daftar-genre', async (req, res) => {
   }
 });
 
-app.get('/api/comic/:id', async (req, res) => {
+app.get(['/api/comic/:id', '/api/comic/:id/'], async (req, res) => {
   try {
     const { id } = req.params;
     const response = await fetch(`https://bacakomik.my/komik/${id}/`, { headers });
@@ -179,7 +192,7 @@ app.get('/api/comic/:id', async (req, res) => {
   }
 });
 
-app.get('/api/chapter/:id', async (req, res) => {
+app.get(['/api/chapter/:id', '/api/chapter/:id/'], async (req, res) => {
   try {
     const { id } = req.params;
     const response = await fetch(`https://bacakomik.my/${id}/`, { headers });
@@ -212,7 +225,11 @@ app.get('/api/chapter/:id', async (req, res) => {
 
 // Handle /api/* errors or 404s specifically
 app.use('/api', (req, res, next) => {
-  res.status(404).json({ success: false, message: 'Endpoint not found' });
+  res.status(404).json({ 
+    success: false, 
+    message: `Endpoint ${req.originalUrl} not found on this server`,
+    suggestion: 'Try /api/health to check server status'
+  });
 });
 
 /**
