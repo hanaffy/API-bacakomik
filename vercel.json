@@ -1,6 +1,3 @@
 {
-  "version": 2,
-  "redirects": [
-    { "source": "/", "destination": "/api/health", "permanent": false }
-  ]
+  "version": 2
 }
