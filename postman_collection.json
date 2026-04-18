@@ -1,0 +1,171 @@
+{
+	"info": {
+		"_postman_id": "bacakomik-scraper-api",
+		"name": "Bacakomik Scraper API",
+		"description": "Koleksi API untuk scraping komik dari bacakomik.my. Gunakan variabel {{baseUrl}} untuk alamat host (contoh: http://localhost:3000 atau URL deploy Anda).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "List Komik",
+			"item": [
+				{
+					"name": "Home / Komik Default",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/komik?page=1&limit=10&status=ongoing&type=manhwa",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"komik"
+							],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "10" },
+								{ "key": "status", "value": "ongoing" },
+								{ "key": "type", "value": "manhwa" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Komik Terbaru",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/komik-terbaru",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "komik-terbaru"]
+						}
+					}
+				},
+				{
+					"name": "Daftar Komik (Semua)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/daftar-komik",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "daftar-komik"]
+						}
+					}
+				},
+				{
+					"name": "Rekomendasi (Top Rated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/rekomendasi",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rekomendasi"]
+						}
+					}
+				},
+				{
+					"name": "Komik Populer",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/komik-populer",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "komik-populer"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Pencarian & Filter",
+			"item": [
+				{
+					"name": "Search / Cari",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/cari?q=solo",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cari"],
+							"query": [
+								{ "key": "q", "value": "solo" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Filter by Genre",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/genres/isekai",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "genres", "isekai"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Detail & Content",
+			"item": [
+				{
+					"name": "Detail Komik",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/comic/magic-emperor",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "comic", "magic-emperor"]
+						}
+					}
+				},
+				{
+					"name": "Baca Chapter",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/chapter/magic-emperor-chapter-01",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "chapter", "magic-emperor-chapter-01"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Metadata",
+			"item": [
+				{
+					"name": "Daftar Genre",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/daftar-genre",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "daftar-genre"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}
