@@ -1,0 +1,5 @@
+{
+  "name": "Bacakomik Scraper API",
+  "description": "A web API to scrape comics from bacakomik.my and return pretty-printed JSON data.",
+  "requestFramePermissions": []
+}
