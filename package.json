@@ -25,6 +25,7 @@
     "@angular/ssr": "^21.0.0",
     "@google/genai": "^1.27.0",
     "@types/cors": "^2.8.19",
+    "@vercel/node": "^5.7.11",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "express": "^5.1.0",
