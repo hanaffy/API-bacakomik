@@ -104,16 +104,13 @@ async function handleListEndpoint(req: express.Request, res: express.Response, u
 
 // API Endpoints - Menggunakan array rute untuk mendukung dengan/tanpa trailing slash
 const apiRoutes = [
-  { path: '/api/health', handler: (req: any, res: any) => res.json({ status: 'ok', time: new Date().toISOString(), url: req.originalUrl }) },
-  { path: '/api/komik', builder: (page: number) => `https://bacakomik.my/page/${page}/` },
+  { path: '/api/health', handler: (req: any, res: any) => {
+    console.log('[API] Health check called');
+    return res.json({ status: 'ok', time: new Date().toISOString(), url: req.url, originalUrl: req.originalUrl });
+  }},
+  { path: '/api/rekomendasi', builder: (page: number) => `https://bacakomik.my/daftar-komik/page/${page}/?order=rating` },
   { path: '/api/komik-terbaru', builder: (page: number) => `https://bacakomik.my/komik-terbaru/page/${page}/` },
-  { path: '/api/daftar-komik', builder: (page: number) => `https://bacakomik.my/daftar-komik/page/${page}/` },
-  { path: '/api/komik-populer', builder: (page: number) => `https://bacakomik.my/komik-populer/page/${page}/` },
-  { path: '/api/komik-berwarna', builder: (page: number) => `https://bacakomik.my/komik-berwarna/page/${page}/` },
-  { path: '/api/baca-manhwa', builder: (page: number) => `https://bacakomik.my/baca-manhwa/page/${page}/` },
-  { path: '/api/baca-manhua', builder: (page: number) => `https://bacakomik.my/baca-manhua/page/${page}/` },
-  { path: '/api/baca-manga', builder: (page: number) => `https://bacakomik.my/baca-manga/page/${page}/` },
-  { path: '/api/rekomendasi', builder: (page: number) => `https://bacakomik.my/daftar-komik/page/${page}/?order=rating` }
+  { path: '/api/komik', builder: (page: number) => `https://bacakomik.my/page/${page}/` }
 ];
 
 // Daftarkan rute dasar
@@ -122,7 +119,10 @@ apiRoutes.forEach(route => {
   if (route.handler) {
     app.get(paths, route.handler);
   } else if (route.builder) {
-    app.get(paths, (req, res) => handleListEndpoint(req, res, route.builder!));
+    app.get(paths, (req, res) => {
+      console.log(`[API] Matching route: ${route.path}`);
+      return handleListEndpoint(req, res, route.builder!);
+    });
   }
 });
 
