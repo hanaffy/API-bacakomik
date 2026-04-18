@@ -102,135 +102,87 @@ async function handleListEndpoint(req: express.Request, res: express.Response, u
   }
 }
 
-// API Endpoints - Menggunakan array rute untuk mendukung dengan/tanpa trailing slash
-const apiRoutes = [
-  { path: '/api/health', handler: (req: any, res: any) => {
-    console.log('[API] Health check called');
-    return res.json({ status: 'ok', time: new Date().toISOString(), url: req.url, originalUrl: req.originalUrl });
-  }},
-  { path: '/api/rekomendasi', builder: (page: number) => `https://bacakomik.my/daftar-komik/page/${page}/?order=rating` },
-  { path: '/api/komik-terbaru', builder: (page: number) => `https://bacakomik.my/komik-terbaru/page/${page}/` },
-  { path: '/api/komik', builder: (page: number) => `https://bacakomik.my/page/${page}/` }
-];
+// --- API ROUTER ---
+const apiRouter = express.Router();
 
-// Daftarkan rute dasar
-apiRoutes.forEach(route => {
-  const paths = [route.path, `${route.path}/`];
-  if (route.handler) {
-    app.get(paths, route.handler);
-  } else if (route.builder) {
-    app.get(paths, (req, res) => {
-      console.log(`[API] Matching route: ${route.path}`);
-      return handleListEndpoint(req, res, route.builder!);
-    });
-  }
+apiRouter.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    time: new Date().toISOString(),
+    url: req.originalUrl,
+    msg: 'API is alive on Express'
+  });
 });
 
-app.get(['/api/genres/:genre', '/api/genres/:genre/'], (req, res) => handleListEndpoint(req, res, (page) => `https://bacakomik.my/genres/${req.params['genre']}/page/${page}/`));
-
-app.get(['/api/cari', '/api/cari/'], (req, res) => {
-  const query = req.query['q'] as string || '';
-  return handleListEndpoint(req, res, (page) => `https://bacakomik.my/page/${page}/?s=${encodeURIComponent(query)}`);
-});
-
-app.get(['/api/daftar-genre', '/api/daftar-genre/'], async (req, res) => {
+apiRouter.get('/rekomendasi', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/daftar-komik/page/${p}/?order=rating`));
+apiRouter.get('/komik-terbaru', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/komik-terbaru/page/${p}/`));
+apiRouter.get('/komik', (req, res) => handleListEndpoint(req, res, (p) => `https://bacakomik.my/page/${p}/`));
+apiRouter.get('/daftar-genre', async (req, res) => {
   try {
     const response = await fetch(`https://bacakomik.my/daftar-genre/`, { headers });
     const html = await response.text();
     const $ = cheerio.load(html);
-    
-    const genres: Record<string, unknown>[] = [];
+    const genres: any[] = [];
     $('.genrelist li').each((i, el) => {
       const title = $(el).find('a').text().trim();
       const link = $(el).find('a').attr('href');
       const id = link ? link.split('/').filter(Boolean).pop() : '';
       genres.push({ id, title, link });
     });
-    
     res.json({ success: true, creator: "Aiman El Hanaffy", data: genres });
-  } catch (error) {
-    const err = error as Error;
-    res.status(500).json({ success: false, creator: "Aiman El Hanaffy", message: err.message });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.get(['/api/comic/:id', '/api/comic/:id/'], async (req, res) => {
+apiRouter.get('/comic/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const response = await fetch(`https://bacakomik.my/komik/${id}/`, { headers });
     const html = await response.text();
     const $ = cheerio.load(html);
-    
     const title = $('h1[itemprop="name"]').text().trim();
     let image = $('.thumb img').attr('data-lazy-src') || $('.thumb img').attr('src');
-    if (!image || image.startsWith('data:image')) {
-      image = $('.thumb noscript img').attr('src');
-    }
     const description = $('div[itemprop="description"]').text().trim();
-    
-    const status = $('.spe span:contains("Status:")').text().replace('Status:', '').trim();
-    const type = $('.spe span:contains("Jenis Komik:") a').text().trim();
-    
-    const genres: string[] = [];
-    $('.genre-info a').each((i, el) => {
-      genres.push($(el).text().trim());
-    });
-    
-    const chapters: Record<string, unknown>[] = [];
+    const chapters: any[] = [];
     $('#chapter_list li').each((i, el) => {
       const chapterTitle = $(el).find('.lchx a').text().trim();
       const chapterLink = $(el).find('.lchx a').attr('href');
       const chapterId = chapterLink ? chapterLink.split('/').filter(Boolean).pop() : '';
-      const chapterDate = $(el).find('.dt a').text().trim();
-      chapters.push({ id: chapterId, title: chapterTitle, link: chapterLink, date: chapterDate });
+      chapters.push({ id: chapterId, title: chapterTitle });
     });
-    
-    res.json({ success: true, creator: "Aiman El Hanaffy", data: { id, title, image, description, status, type, genres, chapters } });
-  } catch (error) {
-    const err = error as Error;
-    res.status(500).json({ success: false, creator: "Aiman El Hanaffy", message: err.message });
+    res.json({ success: true, data: { id, title, image, description, chapters } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.get(['/api/chapter/:id', '/api/chapter/:id/'], async (req, res) => {
+apiRouter.get('/chapter/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const response = await fetch(`https://bacakomik.my/${id}/`, { headers });
     const html = await response.text();
     const $ = cheerio.load(html);
-    
     const title = $('h1[itemprop="name"]').text().trim();
-    
     const images: string[] = [];
     $('#chimg-auh img').each((i, el) => {
-      let src = $(el).attr('data-lazy-src') || $(el).attr('src');
-      if (!src || src.startsWith('data:image')) {
-        // try to find noscript sibling or child
-        const noscriptSrc = $(el).next('noscript').find('img').attr('src');
-        if (noscriptSrc) {
-          src = noscriptSrc;
-        }
-      }
-      if (src && !src.startsWith('data:image')) {
-        images.push(src);
-      }
+      const src = $(el).attr('data-lazy-src') || $(el).attr('src');
+      if (src && !src.startsWith('data:image')) images.push(src);
     });
-    
-    res.json({ success: true, creator: "Aiman El Hanaffy", data: { id, title, images } });
-  } catch (error) {
-    const err = error as Error;
-    res.status(500).json({ success: false, creator: "Aiman El Hanaffy", message: err.message });
+    res.json({ success: true, data: { id, title, images } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Handle /api/* errors or 404s specifically
-app.use('/api', (req, res, next) => {
-  res.status(404).json({ 
-    success: false, 
-    message: `Endpoint ${req.originalUrl} not found on this server`,
-    suggestion: 'Try /api/health to check server status'
-  });
+// Use API router
+app.use('/api', apiRouter);
+
+// Strict API 404 - MUST BE AFTER apiRouter but BEFORE Angular handler
+app.use('/api', (req, res) => {
+  res.status(404).json({ success: false, message: `API Endpoint ${req.originalUrl} not found` });
 });
+// --- END API ROUTER ---
 
 /**
  * Serve static files from /browser
